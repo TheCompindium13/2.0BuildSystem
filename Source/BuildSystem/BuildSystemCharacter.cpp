@@ -87,9 +87,9 @@ void ABuildSystemCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::Look);
 		// Building
-		PlayerInputComponent->BindAction("StartBuild", IE_Pressed, this, &ABuildSystemCharacter::StartBuildingMode);
-		PlayerInputComponent->BindAction("PlaceStructure", IE_Pressed, this, &ABuildSystemCharacter::PlaceStructure);
-
+		EnhancedInputComponent->BindAction(BuildAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::StartBuildingMode);
+		EnhancedInputComponent->BindAction(PlaceAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::PlaceStructure);
+		EnhancedInputComponent->BindAction(RotateAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::RotatePreview);
 	}
 	else
 	{
@@ -100,28 +100,66 @@ void ABuildSystemCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 void ABuildSystemCharacter::StartBuildingMode()
 {
 	//if (!SelectedStructure || bIsBuildingMode) return;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-
-	PreviewActor;// = GetWorld()->SpawnActor<AActor>(SelectedStructure, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-	if (PreviewActor)
+	if (bIsBuildingMode)
 	{
-		PreviewActor->SetActorEnableCollision(false); // Disable collisions for preview.
-		bIsBuildingMode = true;
+		UE_LOG(LogTemp, Warning, TEXT("Start Building Mode Activated"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Start Building Mode Activated"));
+
+		// Spawn a preview actor for building
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+
+		PreviewActor = GetWorld()->SpawnActor<AActor>(SelectedStructure, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+
+		if (PreviewActor)
+		{
+			PreviewActor->SetActorEnableCollision(false);
+			bIsBuildingMode = true;
+		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("End Building Mode Activated"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("End Building Mode Activated"));
+	}
+	
 }
 
 void ABuildSystemCharacter::StopBuildingMode()
 {
+	if (PreviewActor)
+	{
+		PreviewActor->Destroy();
+		PreviewActor = nullptr;
+	}
+	bIsBuildingMode = false;
 }
 
 void ABuildSystemCharacter::PlaceStructure()
 {
+	if (!PreviewActor || !bIsBuildingMode) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Structure Placed"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Structure Placed"));
+
+	// Finalize the structure placement
+	FTransform SpawnTransform = PreviewActor->GetActorTransform();
+	StopBuildingMode();
+
+	GetWorld()->SpawnActor<AActor>(SelectedStructure, SpawnTransform);
 }
 
 void ABuildSystemCharacter::RotatePreview(const FInputActionValue& Value)
 {
+	if (PreviewActor)
+	{
+		float RotationValue = Value.Get<float>();
+		UE_LOG(LogTemp, Warning, TEXT("Rotating Preview: %f"), RotationValue);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Rotating Preview: %f"), RotationValue));
+		FRotator NewRotation = PreviewActor->GetActorRotation();
+		NewRotation.Yaw += RotationValue * 10.0f;
+		PreviewActor->SetActorRotation(NewRotation);
+	}
 }
 
 

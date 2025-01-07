@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "BuildableActor.h"
 #include "BuildSystemCharacter.generated.h"
 
 class USpringArmComponent;
