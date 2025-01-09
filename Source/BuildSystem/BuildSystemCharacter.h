@@ -46,15 +46,23 @@ class ABuildSystemCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* RotateAction;
 
+	UPROPERTY(EditAnywhere, Category = "Buildable", meta = (AllowPrivateAccess = "true"))
+	UStaticMesh* SelectedStructureMesh;
+
+	UPROPERTY(EditAnywhere, Category = "Building")
+	TSubclassOf<ABuildableActor> SelectedStructure;
+
+	UPROPERTY(EditAnywhere, Category = "Building")
+	ABuildableActor* PreviewActor;
+	UPROPERTY(EditAnywhere, Category = "Building")
+	TSubclassOf <ABuildableActor> PreviewActorClass;
+	UPROPERTY(EditAnywhere, Category = "Building")
+	UStaticMeshComponent* PreviewMeshComponent;
 public:
 	ABuildSystemCharacter();
 
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Building")
-	TSubclassOf<class ABuildableActor> SelectedStructure;
 
-	UPROPERTY(VisibleAnywhere, Category = "Building")
-	AActor* PreviewActor;
 
 	bool bIsBuildingMode;
 

@@ -88,6 +88,7 @@ void ABuildSystemCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::Look);
 		// Building
 		EnhancedInputComponent->BindAction(BuildAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::StartBuildingMode);
+		EnhancedInputComponent->BindAction(BuildAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::StopBuildingMode);
 		EnhancedInputComponent->BindAction(PlaceAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::PlaceStructure);
 		EnhancedInputComponent->BindAction(RotateAction, ETriggerEvent::Triggered, this, &ABuildSystemCharacter::RotatePreview);
 	}
@@ -99,32 +100,81 @@ void ABuildSystemCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 void ABuildSystemCharacter::StartBuildingMode()
 {
-	//if (!SelectedStructure || bIsBuildingMode) return;
-	if (bIsBuildingMode)
+	if (!SelectedStructure || bIsBuildingMode)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Start Building Mode Activated"));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Start Building Mode Activated"));
-
-		// Spawn a preview actor for building
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-
-		PreviewActor = GetWorld()->SpawnActor<AActor>(SelectedStructure, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-
-		if (PreviewActor)
-		{
-			PreviewActor->SetActorEnableCollision(false);
-			bIsBuildingMode = true;
-		}
+		UE_LOG(LogTemp, Error, TEXT("Building Mode could not start. Invalid SelectedStructure or already in building mode."));
+		return;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("End Building Mode Activated"));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("End Building Mode Activated"));
-	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Start Building Mode Activated"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Start Building Mode Activated"));
+
+	FVector SpawnLocation = Owner->GetActorLocation();
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	UE_LOG(LogTemp, Warning, TEXT("Attempting to spawn actor at %s"), *SpawnLocation.ToString());
+	// Spawn a preview actor for building
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	PreviewActor = GetWorld()->SpawnActor<ABuildableActor>(SelectedStructure., SpawnLocation, SpawnRotation);
+	UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned successfully at %s"), *SpawnLocation.ToString());
+			if (UStaticMeshComponent* MeshComponent = PreviewActor->FindComponentByClass<UStaticMeshComponent>())
+			{
+				if (MeshComponent->GetStaticMesh())
+				{
+					UE_LOG(LogTemp, Warning, TEXT("PreviewActor Static Mesh assigned successfully."));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("PreviewActor spawned but Static Mesh is missing!"));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("PreviewActor spawned but Static Mesh Component is missing!"));
+			}
 	
-}
+			bIsBuildingMode = true;
 
+	//// Spawn a preview actor for building
+	//FActorSpawnParameters SpawnParams;
+	//SpawnParams.Owner = this;
+//	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+//
+	//FVector SpawnLocation = GetActorLocation() + GetActorForwardVector() *;
+	//FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	//UE_LOG(LogTemp, Warning, TEXT("Attempting to spawn actor at %s"), *SpawnLocation.ToString());
+
+	//PreviewActor = GetWorld()->SpawnActor<ABuildableActor>(SelectedStructure, SpawnLocation, SpawnRotation, SpawnParams);
+//
+//	if (PreviewActor)
+//	{
+//		PreviewActor->SetActorEnableCollision(false);
+//
+//		if (UStaticMeshComponent* MeshComponent = PreviewActor->FindComponentByClass<UStaticMeshComponent>())
+//		{
+//			if (MeshComponent->GetStaticMesh())
+//			{
+//				UE_LOG(LogTemp, Warning, TEXT("PreviewActor Static Mesh assigned successfully."));
+//			}
+//			else
+//			{
+//				UE_LOG(LogTemp, Error, TEXT("PreviewActor spawned but Static Mesh is missing!"));
+//			}
+//		}
+//		else
+//		{
+//			UE_LOG(LogTemp, Error, TEXT("PreviewActor spawned but Static Mesh Component is missing!"));
+//		}
+//
+//		bIsBuildingMode = true;
+//	}
+//	else
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("Failed to spawn PreviewActor!"));
+//	}
+}
 void ABuildSystemCharacter::StopBuildingMode()
 {
 	if (PreviewActor)
@@ -146,13 +196,15 @@ void ABuildSystemCharacter::PlaceStructure()
 	FTransform SpawnTransform = PreviewActor->GetActorTransform();
 	StopBuildingMode();
 
-	GetWorld()->SpawnActor<AActor>(SelectedStructure, SpawnTransform);
+	GetWorld()->SpawnActor<ABuildableActor>(SelectedStructure, SpawnTransform);
 }
 
 void ABuildSystemCharacter::RotatePreview(const FInputActionValue& Value)
 {
 	if (PreviewActor)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ROTATING Building Mode Activated"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ROTATING Building Mode Activated"));
 		float RotationValue = Value.Get<float>();
 		UE_LOG(LogTemp, Warning, TEXT("Rotating Preview: %f"), RotationValue);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Rotating Preview: %f"), RotationValue));
@@ -162,9 +214,27 @@ void ABuildSystemCharacter::RotatePreview(const FInputActionValue& Value)
 	}
 }
 
-
 void ABuildSystemCharacter::UpdatePreviewLocation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("UPDATBuilding Mode Activated"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("UPDAT Building Mode Activated"));
+	if (PreviewActor && bIsBuildingMode)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UPDATING Building Mode Activated"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("UPDATING Building Mode Activated"));
+		FHitResult Hit;
+		FVector Start = FollowCamera->GetComponentLocation();
+		FVector End = Start + (FollowCamera->GetForwardVector());
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+
+		if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QueryParams))
+		{
+			FVector Location = Hit.Location;
+			PreviewActor->SetActorLocation(Location);
+		}
+	}
 }
 
 void ABuildSystemCharacter::Move(const FInputActionValue& Value)
